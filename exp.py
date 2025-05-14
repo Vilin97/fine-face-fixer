@@ -64,3 +64,4 @@ display(image)
 images = pipe(prompt, image=image, num_inference_steps=50, image_guidance_scale=1.8).images
 images[0].save("peter_better_eyes.png")
 images[0]
+# %%
