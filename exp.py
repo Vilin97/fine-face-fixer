@@ -55,11 +55,11 @@ pipe.to('cuda')
 pipe.scheduler = EulerAncestralDiscreteScheduler.from_config(pipe.scheduler.config)
 
 # %%
-image = Image.open("peter_bad_eyes.png")
+image = Image.open("peter_480.jpg")
 
 width, height = image.size
 
-prompt = "fix the eyes"
+prompt = "give him a hat"
 display(image)
 images = pipe(prompt, image=image, num_inference_steps=50, image_guidance_scale=1.8).images
 images[0].save("peter_better_eyes.png")
