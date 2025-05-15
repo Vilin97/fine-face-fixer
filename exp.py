@@ -55,13 +55,95 @@ pipe.to('cuda')
 pipe.scheduler = EulerAncestralDiscreteScheduler.from_config(pipe.scheduler.config)
 
 # %%
-image = Image.open("peter_480.jpg")
+image = Image.open("vas_with_hat.png")
 
 width, height = image.size
 
-prompt = "give him a hat"
+prompt = "fix his teeth"
+display(image)
+images = pipe(prompt, image=image, num_inference_steps=10, image_guidance_scale=1.8).images
+images[0].save("vas_with_hat_fixed.png")
+images[0]
+# %%
+width, height = image.size
+left = width // 3
+right = 2 * width // 3
+bottom = height // 3
+top = 2 * height // 3
+cropped_image = image.crop((left, bottom, right, top))
+display(cropped_image)
+cropped_image.save("vas_cropped.png")
+
+#%%
+cropped_image = cropped_image.resize((512, 512), Image.LANCZOS)
+cropped_image.save("vas_cropped_512.png")
+display(cropped_image)
+
+#%%
+image = Image.open("vas_cropped_512.png")
+
+prompt = "make his teeth look normal"
 display(image)
 images = pipe(prompt, image=image, num_inference_steps=50, image_guidance_scale=1.8).images
-images[0].save("peter_better_eyes.png")
 images[0]
+
+#%%
+
+def encode(pipe, image):
+    # Load and preprocess the image
+    image = Image.open("vas.jpg").convert("RGB")
+    display(image)
+    peter_pixels = np.asarray(image).astype(np.float32) / 255.0  # Normalize to [0, 1]
+    peter_tensor = torch.tensor(peter_pixels).permute(2, 0, 1).unsqueeze(0)  # Shape: (1, 3, H, W)
+    # Move to the same dtype and device as the VAE expects
+    peter_tensor = peter_tensor.to(dtype=pipe.vae.dtype, device=pipe.device)
+    # Encode
+    encoded = pipe.vae.encode(peter_tensor)
+    latent = encoded.latent_dist.sample()
+    return latent
+
+def decode(pipe, latent):
+    decoded = pipe.vae.decode(latent)
+    # 1. Get the image tensor (usually in decoded.sample)
+    image_tensor = decoded.sample  # This is usually a tensor like (1, 3, H, W)
+    # 2. Squeeze batch dimension and move to CPU
+    image_tensor = image_tensor.squeeze(0).detach().cpu()
+    # 3. Clamp values to [0, 1] to make it valid for display
+    image_tensor = image_tensor.clamp(0, 1)
+    # 4. Convert to numpy and then PIL image
+    image_np = (image_tensor.permute(1, 2, 0).numpy() * 255).astype(np.uint8)
+    image_pil = Image.fromarray(image_np)
+    return image_pil
+
+encoded = encode(pipe, image)
+decoded = decode(pipe, encoded)
+display(decoded)
+
+#%%
+# Convert both images to numpy arrays
+original_np = np.asarray(image).astype(np.float32)
+decoded_np = np.asarray(decoded).astype(np.float32)
+
+# Ensure both arrays have the same shape
+if original_np.shape != decoded_np.shape:
+    decoded_np = np.array(decoded.resize(image.size)).astype(np.float32)
+
+# Subtract decoded from original
+diff_np = original_np - decoded_np
+
+# Normalize to [0, 255] for display
+diff_np = np.clip((diff_np - diff_np.min()) / (np.ptp(diff_np) + 1e-8) * 255, 0, 255).astype(np.uint8)
+
+# Convert back to PIL Image and display
+diff_image = Image.fromarray(diff_np)
+display(diff_image)
+
+#%%
+from diffusers import DiffusionPipeline
+import torch
+
+model_id = "jychen9811/FaithDiff"
+pipe = DiffusionPipeline.from_pretrained(model_id, torch_dtype=torch.float16)
+pipe.to("cuda")  # or "cpu" if you don't have a GPU
+
 # %%

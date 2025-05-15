@@ -1,3 +1,5 @@
 cache/
 *.png
 *.jpg
+proc_data/
+checkpoints/
