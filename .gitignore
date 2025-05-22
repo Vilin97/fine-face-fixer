@@ -1,5 +1,7 @@
 cache/
-*.png
-*.jpg
 proc_data/
 checkpoints/
+*.png
+*.jpg
+*.cpython
+__pycache__/
