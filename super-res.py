@@ -76,7 +76,7 @@ pipe = DiffusionPipeline.from_pretrained(
 
 # Load UNet and FaithDiff weights
 from pipeline_faithdiff_stable_diffusion_xl import UNet2DConditionModel
-
+#%%
 pipe.unet = UNet2DConditionModel.from_pretrained(
     model_id, subfolder="unet", variant="fp16", use_safetensors=True
 )
